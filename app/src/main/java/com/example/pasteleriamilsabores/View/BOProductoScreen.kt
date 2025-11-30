@@ -137,7 +137,6 @@ fun BOAgregarProductoForm(
     var categoriaSeleccionada by remember(productoExistente, categorias) {
         mutableStateOf(categorias.find { it.id == productoExistente?.categoria?.id })
     }
-
     var expandedCat by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -151,7 +150,6 @@ fun BOAgregarProductoForm(
         }
     )
 
-    // Importante: Convertir la lista inmutable del producto a una lista mutable para edición
     val variantesList = remember(productoExistente) {
         if (productoExistente != null) {
             productoExistente.variantes.toMutableStateList()
@@ -160,8 +158,10 @@ fun BOAgregarProductoForm(
         }
     }
 
+    // Estados para la nueva variante
     var varNombre by remember { mutableStateOf("") }
     var varPrecio by remember { mutableStateOf("") }
+    var varStock by remember { mutableStateOf("") } // 🛑 NUEVO ESTADO: Stock
     var varInfo by remember { mutableStateOf("") }
 
     Column(
@@ -178,6 +178,7 @@ fun BOAgregarProductoForm(
             color = MaterialTheme.colorScheme.primary
         )
 
+        // Botón Imagen
         Button(
             onClick = {
                 photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -233,21 +234,45 @@ fun BOAgregarProductoForm(
         )
 
         Divider()
-        Text("Variantes / Tamaños", style = MaterialTheme.typography.titleMedium)
+        Text("Variantes / Tamaños (Stock)", style = MaterialTheme.typography.titleMedium)
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedTextField(value = varNombre, onValueChange = { varNombre = it }, label = { Text("Nombre (ej: 12p)") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = varPrecio, onValueChange = { varPrecio = it }, label = { Text("Precio") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(0.8f))
+            OutlinedTextField(
+                value = varNombre,
+                onValueChange = { varNombre = it },
+                label = { Text("Nombre (ej: 12p)") },
+                modifier = Modifier.weight(1.2f)
+            )
+            OutlinedTextField(
+                value = varPrecio,
+                onValueChange = { varPrecio = it },
+                label = { Text("Precio") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(0.9f)
+            )
+            // Campo Stock Nuevo
+            OutlinedTextField(
+                value = varStock,
+                onValueChange = { varStock = it },
+                label = { Text("Stock") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(0.9f)
+            )
         }
         OutlinedTextField(value = varInfo, onValueChange = { varInfo = it }, label = { Text("Info Nutricional") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
                 if (varNombre.isNotBlank() && varPrecio.isNotBlank()) {
-                    // ID 0 indica nueva variante para el backend (incluso si el producto existe)
-                    variantesList.add(VarianteProducto(0, varNombre, varPrecio.toIntOrNull() ?: 0, 100, varInfo))
+                    val stockInt = varStock.toIntOrNull() ?: 0
+                    val precioInt = varPrecio.toIntOrNull() ?: 0
+
+                    variantesList.add(VarianteProducto(0, varNombre, precioInt, stockInt, varInfo))
+
+                    // Limpiar campos
                     varNombre = ""
                     varPrecio = ""
+                    varStock = "" // Limpiar stock
                     varInfo = ""
                 }
             },
@@ -256,6 +281,7 @@ fun BOAgregarProductoForm(
             Text("Añadir Variante")
         }
 
+        // Lista visual
         if (variantesList.isNotEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(8.dp)) {
@@ -265,7 +291,8 @@ fun BOAgregarProductoForm(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("• ${variante.nombre} ($${variante.precio})")
+                            // Mostrar Stock en la lista visual
+                            Text("• ${variante.nombre} ($${variante.precio}) - Stock: ${variante.stock}")
                             IconButton(onClick = { variantesList.removeAt(index) }, modifier = Modifier.size(24.dp)) {
                                 Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
                             }
@@ -287,12 +314,12 @@ fun BOAgregarProductoForm(
                         imagen = imagenUrl,
                         precioBase = precioBase.toIntOrNull() ?: 0,
                         categoria = categoriaSeleccionada,
-                        variantes = variantesList.toList() // Enviamos la lista completa (nuevas + existentes)
+                        variantes = variantesList.toList()
                     )
                     onGuardar(prod)
                 },
                 modifier = Modifier.weight(1f),
-                enabled = nombre.isNotBlank() && categoriaSeleccionada != null
+                enabled = nombre.isNotBlank() && categoriaSeleccionada != null && variantesList.isNotEmpty()
             ) { Text(if (productoExistente != null) "Actualizar" else "Guardar") }
 
             OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
@@ -325,11 +352,15 @@ fun BOProductoItem(
                 Text("Cat: ${producto.categoria?.nombre ?: "Sin Categ."}", style = MaterialTheme.typography.bodySmall)
 
                 if (producto.variantes.isNotEmpty()) {
+                    // Calcular stock total para mostrar en resumen
+                    val stockTotal = producto.variantes.sumOf { it.stock }
                     Text(
-                        "${producto.variantes.size} variantes",
+                        "${producto.variantes.size} var. | Stock Total: $stockTotal",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (stockTotal > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
+                } else {
+                    Text("Sin variantes", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
                 }
             }
             IconButton(onClick = onEdit) {

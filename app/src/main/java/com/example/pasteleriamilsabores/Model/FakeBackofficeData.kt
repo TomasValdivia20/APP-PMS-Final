@@ -29,18 +29,5 @@ object FakeBackofficeData {
         "Ene" to 8000f, "Feb" to 9500f, "Mar" to 12000f, "Abr" to 10500f, "May" to 15000f, "Jun" to 18000f
     )
 
-    val usuarioActual = UsuarioBackoffice(
-        id = "e4e2a1b3",
-        nombre = "Admin",
-        apellido = "Mil Sabores",
-        correo = "admin@milsabores.cl",
-        rol = "Administrador"
-    )
 
-    val usuariosFicticios = listOf(
-        UsuarioBackoffice("u1", "Juan", "Pérez", "juan.perez@cliente.cl", "Cliente"),
-        UsuarioBackoffice("u2", "María", "González", "maria.gonzalez@cliente.cl", "Cliente"),
-        UsuarioBackoffice("e1", "Pedro", "Rojas", "pedro.rojas@empleado.cl", "Empleado"),
-        usuarioActual // Incluimos al admin actual en la lista
-    )
 }

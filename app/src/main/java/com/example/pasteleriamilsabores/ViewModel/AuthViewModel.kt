@@ -6,19 +6,24 @@ import androidx.lifecycle.viewModelScope
 import com.example.pasteleriamilsabores.Model.FakeDatabase
 import com.example.pasteleriamilsabores.Model.Usuario
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class AuthViewModel : ViewModel() {
     var mensaje = mutableStateOf("")
+    private val _usuarioActual = MutableStateFlow<Usuario?>(null)
+    val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
     fun login(email: String, pass: String): Usuario? {
         val user = FakeDatabase.usuarios.find { it.email == email && it.password == pass }
 
-        return if (user != null) {
+        if (user != null) {
             mensaje.value = "Bienvenido, ${user.nombre}"
-            user // Retornamos el usuario encontrado
+            _usuarioActual.value = user
+            return user
         } else {
             mensaje.value = "Credenciales incorrectas"
-            null // Retornamos null si falló
+            return null
         }
     }
 

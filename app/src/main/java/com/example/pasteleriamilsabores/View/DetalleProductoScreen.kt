@@ -118,8 +118,17 @@ fun DetalleProductoScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    varianteSeleccionada?.let {
-                        NutricionPanelSimple(it)
+                    // MOSTRAR STOCK
+                    varianteSeleccionada?.let { variante ->
+                        Text(
+                            text = "Stock disponible: ${variante.stock}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (variante.stock > 0) Color.Green else Color.Red,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+
+                        NutricionPanelSimple(variante)
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -143,10 +152,11 @@ fun DetalleProductoScreen(
                                 }
                             }
                         },
-                        enabled = varianteSeleccionada != null,
+                        // Aca se bloquea en caso que no haya stock
+                        enabled = varianteSeleccionada != null && varianteSeleccionada!!.stock > 0,
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
-                        Text("Agregar al Carrito", style = MaterialTheme.typography.titleMedium)
+                        Text(if ((varianteSeleccionada?.stock ?: 0) > 0) "Agregar al Carrito" else "Agotado")
                     }
                 }
             }

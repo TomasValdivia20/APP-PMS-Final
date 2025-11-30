@@ -10,83 +10,73 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.pasteleriamilsabores.ViewModel.BOViewModel
-import com.example.pasteleriamilsabores.Model.UsuarioBackoffice // <-- Importar modelo
+import com.example.pasteleriamilsabores.Model.UsuarioBackoffice
 
 @Composable
 fun BOUsuarioScreen(viewModel: BOViewModel) {
-    // Observar la lista de usuarios
-    val usuarios by viewModel.usuarios.collectAsState()
+    // 🛑 DATOS REALES: Observamos usuariosReales
+    val usuarios by viewModel.usuariosReales.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Título
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
             "Gestión de Usuarios",
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Lista de usuarios
         if (usuarios.isEmpty()) {
-            Text("No hay usuarios registrados.")
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Cargando usuarios o lista vacía...")
+            }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Cabecera de la "tabla" (opcional)
-                item {
-                    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                        Text("Nombre", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                        Text("Correo", Modifier.weight(1.5f), fontWeight = FontWeight.SemiBold)
-                        Text("Rol", Modifier.weight(0.7f), fontWeight = FontWeight.SemiBold)
-                    }
-                    Divider()
-                }
+            // Cabecera
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                Text("ID", Modifier.weight(0.5f), fontWeight = FontWeight.Bold)
+                Text("Usuario", Modifier.weight(1.5f), fontWeight = FontWeight.Bold)
+                Text("Rol", Modifier.weight(1f), fontWeight = FontWeight.Bold)
+            }
+            HorizontalDivider()
 
-                // Filas de usuarios
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(usuarios, key = { it.id }) { usuario ->
                     BOUsuarioItem(usuario = usuario)
-                    Divider() // Separador entre usuarios
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
-        // En el futuro: Botón para agregar usuario (no funcional)
     }
 }
 
-// Composable para mostrar un ítem de usuario
 @Composable
 fun BOUsuarioItem(usuario: UsuarioBackoffice) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp), // Padding vertical para cada fila
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Nombre Completo
-        Text(
-            text = "${usuario.nombre} ${usuario.apellido}",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        // Correo
-        Text(
-            text = usuario.correo,
-            modifier = Modifier.weight(1.5f),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // Acortar si es muy largo
-        )
-        // Rol
-        Text(
-            text = usuario.rol,
-            modifier = Modifier.weight(0.7f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (usuario.rol == "Administrador") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        // Aquí podrías añadir botones de Editar/Eliminar (no funcionales)
+        Text(text = "#${usuario.id}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.5f))
+
+        Column(modifier = Modifier.weight(1.5f)) {
+            Text(text = "${usuario.nombre} ${usuario.apellido}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(text = usuario.correo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        // Accedemos al nombre del rol dentro del objeto Rol
+        val nombreRol = usuario.rol.nombre
+
+        Surface(
+            color = when (nombreRol) {
+                "ADMIN" -> MaterialTheme.colorScheme.primaryContainer
+                "EMPLEADO" -> MaterialTheme.colorScheme.secondaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            shape = MaterialTheme.shapes.small
+        ) {
+            Text(
+                text = nombreRol,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }

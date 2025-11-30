@@ -23,9 +23,6 @@ import androidx.navigation.navArgument
 import com.example.pasteleriamilsabores.ViewModel.BOViewModel
 
 
-// Opcional: Puedes definir tus rutas aquí para evitar "hardcode"
-
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,65 +30,43 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
             val viewModel: AuthViewModel = viewModel()
+            val authViewModel: AuthViewModel = viewModel()
 
-            //🛑 CLAVE: Definimos una variable que contenga la ruta completa del Home.
+            //Definimos una variable que contenga la ruta completa del Home.
             // Esta ruta siempre debe ser la base para compartir el CartViewModel.
             val HOME_ROUTE = Destinos.HOME_SCREEN
 
-
-            // Usamos las constantes de Destinos
             NavHost(navController, startDestination = Destinos.REGISTER_SCREEN) {
                 composable(Destinos.REGISTER_SCREEN) {
-                    RegisterScreen(navController, viewModel)
+                    RegisterScreen(navController, authViewModel)
                 }
                 composable(Destinos.LOGIN_SCREEN) {
-                    LoginScreen(navController, viewModel)
+                    LoginScreen(navController, authViewModel)
                 }
 
                 // HOME SCREEN
                 composable(Destinos.HOME_SCREEN) { backStackEntry ->
                     val email = backStackEntry.arguments?.getString("email")
-                    // OBTENEMOS EL ALCANCE USANDO LA MISMA RUTA LITERAL COMPLETA
-                    // 'home/{email}' está activo, por lo que podemos usarlo.
                     val sharedViewModelStoreOwner = remember(backStackEntry) {
                         navController.getBackStackEntry(HOME_ROUTE)
                     }
-
                     HomeScreen(
                         navController = navController,
                         email = email,
-                        cartViewModel = viewModel(sharedViewModelStoreOwner) // Inyección
+                        // Pasamos el authViewModel si HomeScreen lo necesitara (opcional),
+                        // pero lo importante es pasarlo a CartScreen más abajo.
+                        cartViewModel = viewModel(sharedViewModelStoreOwner)
                     )
                 }
 
                 // PRODUCTO SCREEN
                 composable(
-                    route = Destinos.PRODUCTOS_SCREEN, // productos_por_categoria/{categoriaId}/{categoriaNombre}
-                    arguments = listOf(
-                        navArgument("categoriaId") { type = NavType.IntType },
-                        navArgument("categoriaNombre") { type = NavType.StringType }
-                    )
+                    route = Destinos.PRODUCTOS_SCREEN,
+                    arguments = listOf(navArgument("categoriaId") { type = NavType.IntType }, navArgument("categoriaNombre") { type = NavType.StringType })
                 ) { backStackEntry ->
-
-                    // 1. OBTENCIÓN DE ARGUMENTOS CON NOMBRES TEMPORALES (Evitando conflicto)
                     val idArg = backStackEntry.arguments?.getInt("categoriaId") ?: 0
-                    val nombreArg = backStackEntry.arguments?.getString("categoriaNombre") ?: "Categoría Desconocida"
-
-                    // Se aplica el reemplazo de '+' en el nombre
-                    val categoriaNombreLimpio = nombreArg.replace('+', ' ')
-
-                    // 2. OBTENCIÓN DEL ALCANCE COMPARTIDO (Mismo que en HOME)
-                    val homeScreenEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(HOME_ROUTE)
-                    }
-
-                    ProductoScreen(
-                        categoriaId = idArg, // Usamos la variable temporal
-                        categoriaNombre = categoriaNombreLimpio,
-                        navController = navController
-                        // ProductoScreen solo necesita CategoriaViewModel y ProductoViewModel,
-                        // no necesita CartViewModel.
-                    )
+                    val nombreArg = backStackEntry.arguments?.getString("categoriaNombre") ?: ""
+                    ProductoScreen(categoriaId = idArg, categoriaNombre = nombreArg.replace('+', ' '), navController = navController)
                 }
 
                 // -------------------------------------------------------------------
@@ -99,53 +74,30 @@ class MainActivity : ComponentActivity() {
 
                 // DETALLE PRODUCTO SCREEN
                 composable(
-                    route = Destinos.DETALLE_PRODUCTO_SCREEN, // detalle_producto_screen/{productoId}
-                    arguments = listOf(
-                        navArgument("productoId") { type = NavType.IntType }
-                    )
+                    route = Destinos.DETALLE_PRODUCTO_SCREEN,
+                    arguments = listOf(navArgument("productoId") { type = NavType.IntType })
                 ) { backStackEntry ->
-
-                    // 1. OBTENCIÓN DEL ARGUMENTO CON NOMBRE TEMPORAL
-                    val idProductoArg = backStackEntry.arguments?.getInt("productoId") ?: 0
-
-                    // 2. OBTENCIÓN DEL ALCANCE COMPARTIDO
-                    val homeScreenEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(HOME_ROUTE)
-                    }
-
-                    DetalleProductoScreen(
-                        productoId = idProductoArg, // Usamos la variable temporal
-                        navController = navController,
-                        // 3. INYECCIÓN DEL CART VIEWMODEL
-                        cartViewModel = viewModel(homeScreenEntry)
-                    )
+                    val homeScreenEntry = remember(backStackEntry) { navController.getBackStackEntry(HOME_ROUTE) }
+                    DetalleProductoScreen(productoId = backStackEntry.arguments?.getInt("productoId") ?: 0, navController = navController, cartViewModel = viewModel(homeScreenEntry))
                 }
 
                 // CART SCREEN
                 composable(Destinos.CART_SCREEN) { backStackEntry ->
-
-                    // 4. OBTENEMOS EL ALCANCE SIEMPRE DEL HOME
                     val sharedViewModelStoreOwner = remember(backStackEntry) {
                         navController.getBackStackEntry(HOME_ROUTE)
                     }
 
                     CartScreen(
                         navController = navController,
-                        cartViewModel = viewModel(sharedViewModelStoreOwner)
+                        cartViewModel = viewModel(sharedViewModelStoreOwner),
+                        authViewModel = authViewModel // PASAMOS LA INSTANCIA COMPARTIDA
                     )
                 }
 
                 // PANTALLA DE COMPRA FINALIZADA
                 composable(Destinos.COMPRA_FINALIZADA_SCREEN) { backStackEntry ->
-                    // Obtenemos el alcance compartido (igual que para CartScreen)
-                    val homeScreenEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(HOME_ROUTE)
-                    }
-
-                    CompraFinalizadaScreen(
-                        navController = navController,
-                        cartViewModel = viewModel(homeScreenEntry)
-                    )
+                    val homeScreenEntry = remember(backStackEntry) { navController.getBackStackEntry(HOME_ROUTE) }
+                    CompraFinalizadaScreen(navController = navController, cartViewModel = viewModel(homeScreenEntry))
                 }
 
                 // PANTALLA DE COMPRA RECHAZADA
@@ -162,11 +114,7 @@ class MainActivity : ComponentActivity() {
 
                 // RUTA BASE DEL BACKOFFICE
                 composable(Destinos.BACKOFFICE_BASE) {
-                    // El BO NavGraph es el NavHost anidado y obtiene su ViewModel internamente
-                    BOBackofficeNavGraph(
-                        navController = navController, // NavController principal (para cerrar sesión)
-
-                    )
+                    BOBackofficeNavGraph(navController = navController)
                 }
 
                 // RUTA DE INFO NUTRICIONAL (API EXTERNA)

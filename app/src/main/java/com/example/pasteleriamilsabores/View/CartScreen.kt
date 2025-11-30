@@ -18,24 +18,32 @@ import androidx.navigation.NavController
 import com.example.pasteleriamilsabores.Destinos
 import com.example.pasteleriamilsabores.Model.CartItem
 import com.example.pasteleriamilsabores.ViewModel.CartViewModel
+import com.example.pasteleriamilsabores.ViewModel.AuthViewModel
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     navController: NavController,
-    cartViewModel: CartViewModel // Recibido como parámetro
+    cartViewModel: CartViewModel, // Recibido como parámetro
+    authViewModel: AuthViewModel = viewModel()
 ) {
     val items by cartViewModel.items.collectAsState()
     val subtotal by cartViewModel.subtotalTotal.collectAsState()
     val descuento by cartViewModel.descuentoTotal.collectAsState()
     val total by cartViewModel.totalPagar.collectAsState()
     val codigoAplicado by cartViewModel.descuentoCodigo.collectAsState()
+    val usuarioActual by authViewModel.usuarioActual.collectAsState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val formatter = remember { NumberFormat.getCurrencyInstance(Locale("es", "CL")) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Mi Carrito de Compras") },
@@ -70,7 +78,7 @@ fun CartScreen(
 
                     item { Divider() }
 
-                    // 🛑 AQUÍ ESTÁ LA SECCIÓN DE RESUMEN CON EL CÓDIGO
+                    // RESUMEN CON EL CÓDIGO DE DSCTO
                     item {
                         CompraResumen(
                             subtotal = subtotal,
@@ -85,8 +93,23 @@ fun CartScreen(
 
                 CheckoutButtons(
                     onCompraExitosa = {
-                        navController.navigate(Destinos.COMPRA_FINALIZADA_SCREEN) {
-                            popUpTo(Destinos.CART_SCREEN) { inclusive = true }
+                        //  VALIDACIÓN DE USUARIO
+                        val uid = usuarioActual?.id?.toLong()
+
+                        if (uid != null && uid > 0) {
+                            cartViewModel.finalizarCompraBackend(
+                                usuarioId = uid,
+                                onSuccess = {
+                                    navController.navigate(Destinos.COMPRA_FINALIZADA_SCREEN) {
+                                        popUpTo(Destinos.CART_SCREEN) { inclusive = true }
+                                    }
+                                },
+                                onError = { errorMsg ->
+                                    scope.launch { snackbarHostState.showSnackbar("Error: $errorMsg") }
+                                }
+                            )
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("Error: Usuario no identificado. Inicie sesión nuevamente.") }
                         }
                     },
                     onCompraError = { }

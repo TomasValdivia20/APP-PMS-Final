@@ -6,7 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
     // 10.0.2.2 es la dirección especial del emulador para acceder al localhost del PC (Felipe)
     // Asegurar de que el puerto sea el mismo que se configuró en Spring Boot (8081)
-    const val BASE_URL = "http://10.0.2.2:8081/"
+    const val BASE_URL = "http://3.239.76.172:8081/"
 
     val instance: ApiService by lazy {
         val retrofit = Retrofit.Builder()

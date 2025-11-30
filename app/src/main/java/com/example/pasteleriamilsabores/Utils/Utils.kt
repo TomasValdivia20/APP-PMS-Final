@@ -1,6 +1,5 @@
 package com.example.pasteleriamilsabores.Utils
 
-import android.util.Patterns
 import com.example.pasteleriamilsabores.network.RetrofitClient
 
 // --- Validar correo, password y rut ---
@@ -45,7 +44,8 @@ fun validarCampos(
     }
 
     // Validar correo electrónico
-    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\$".toRegex()
+    if (!emailRegex.matches(email)) {
         return "Correo inválido"
     }
 
@@ -66,7 +66,7 @@ fun validarRut(input: String): Boolean {
         .replace(Regex("[^0-9k-]"), "") // solo números, guion o k
         .trim()
 
-    if (!Regex("^[0-9]{6,8}-[0-9kK]$").matches(rutLimpio)) return false
+    if (!Regex("^[0-9]{1,8}-[0-9kK]$").matches(rutLimpio)) return false
 
     val cuerpo = rutLimpio.substringBefore("-")
     val dvIngresado = rutLimpio.substringAfter("-").first()

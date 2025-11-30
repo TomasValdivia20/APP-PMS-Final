@@ -151,8 +151,7 @@ fun BOAgregarProductoForm(
         }
     )
 
-    // 🛑 CORRECCIÓN: Usar 'toMutableStateList()' para asegurar reactividad
-    // y asegurarnos de que si es nuevo, empiece vacía.
+    // Importante: Convertir la lista inmutable del producto a una lista mutable para edición
     val variantesList = remember(productoExistente) {
         if (productoExistente != null) {
             productoExistente.variantes.toMutableStateList()
@@ -245,8 +244,7 @@ fun BOAgregarProductoForm(
         Button(
             onClick = {
                 if (varNombre.isNotBlank() && varPrecio.isNotBlank()) {
-                    // Al agregar una variante en modo edición, si el producto ya existe,
-                    // el ID 0 indica al backend que es una NUEVA variante para este producto.
+                    // ID 0 indica nueva variante para el backend (incluso si el producto existe)
                     variantesList.add(VarianteProducto(0, varNombre, varPrecio.toIntOrNull() ?: 0, 100, varInfo))
                     varNombre = ""
                     varPrecio = ""
@@ -258,18 +256,15 @@ fun BOAgregarProductoForm(
             Text("Añadir Variante")
         }
 
-        // Lista visual de variantes
         if (variantesList.isNotEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(8.dp)) {
-                    // Usamos key para ayudar a Compose a rastrear cambios
                     variantesList.forEachIndexed { index, variante ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Mostrar ID para depuración visual si es necesario
                             Text("• ${variante.nombre} ($${variante.precio})")
                             IconButton(onClick = { variantesList.removeAt(index) }, modifier = Modifier.size(24.dp)) {
                                 Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
@@ -292,8 +287,7 @@ fun BOAgregarProductoForm(
                         imagen = imagenUrl,
                         precioBase = precioBase.toIntOrNull() ?: 0,
                         categoria = categoriaSeleccionada,
-                        // Enviamos una copia limpia de la lista para evitar problemas de referencia
-                        variantes = variantesList.toList()
+                        variantes = variantesList.toList() // Enviamos la lista completa (nuevas + existentes)
                     )
                     onGuardar(prod)
                 },

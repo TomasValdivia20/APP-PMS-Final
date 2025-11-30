@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import com.example.pasteleriamilsabores.Model.OrdenRequest
+import com.example.pasteleriamilsabores.Model.DetalleRequest
+import com.example.pasteleriamilsabores.network.RetrofitClient
+import kotlinx.coroutines.launch
 
 class CartViewModel : ViewModel() {
 
@@ -88,4 +92,41 @@ class CartViewModel : ViewModel() {
             }
         }
     }
+
+    fun finalizarCompraBackend(usuarioId: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                // 1. Construir el objeto OrdenRequest
+                val detalles = _items.value.map { item ->
+                    DetalleRequest(
+                        productoId = item.productoId,
+                        varianteId = item.varianteSeleccionada.id,
+                        cantidad = item.cantidad,
+                        precioUnitario = item.varianteSeleccionada.precio
+                    )
+                }
+
+                val request = OrdenRequest(
+                    usuarioId = usuarioId,
+                    total = totalPagar.value, // Usamos el total con descuento
+                    detalles = detalles
+                )
+
+                // 2. Llamar a la API
+                val response = RetrofitClient.instance.crearOrden(request)
+
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    // Error de la API (ej: sin stock)
+                    val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                    onError(errorMsg)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError("Error de conexión: ${e.localizedMessage}")
+            }
+        }
+}
 }

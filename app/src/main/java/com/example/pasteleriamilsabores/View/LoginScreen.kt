@@ -71,22 +71,20 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
             // Botón Principal "Entrar"
             Button(
                 onClick = {
-                    // LÓGICA DE LOGIN Y REDIRECCIÓN
-                    val usuarioLogueado = viewModel.login(email, password)
-
-                    if (usuarioLogueado != null) {
-                        // Verificación de dominio para Backoffice
-                        // Si el correo termina en @milsabores.cl -> Es empleado/admin
-                        if (email.endsWith("@milsabores.cl")) {
-                            navController.navigate(Destinos.BACKOFFICE_BASE) {
-                                popUpTo(Destinos.REGISTER_SCREEN) { inclusive = true }
-                            }
-                        } else {
-                            // Cualquier otro dominio -> Es cliente -> Va al Home
-                            navController.navigate("home/$email") {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    viewModel.login(email, password) { usuarioLogueado ->
+                        if (usuarioLogueado != null) {
+                            // Verificación de dominio para Backoffice
+                            if (email.endsWith("@milsabores.cl")) {
+                                navController.navigate(Destinos.BACKOFFICE_BASE) {
+                                    popUpTo(Destinos.REGISTER_SCREEN) { inclusive = true }
+                                }
+                            } else {
+                                navController.navigate("home/$email") {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                }
                             }
                         }
+                        // Si es null, el mensaje ya se actualizó en el ViewModel
                     }
                 },
                 modifier = Modifier.fillMaxWidth(0.8f)

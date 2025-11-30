@@ -3,67 +3,63 @@ package com.example.pasteleriamilsabores.ViewModel
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pasteleriamilsabores.Model.FakeDatabase
 import com.example.pasteleriamilsabores.Model.Usuario
-import kotlinx.coroutines.launch
+import com.example.pasteleriamilsabores.network.LoginRequest
+import com.example.pasteleriamilsabores.network.RegisterRequestDto
+import com.example.pasteleriamilsabores.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
     var mensaje = mutableStateOf("")
+
     private val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
-    fun login(email: String, pass: String): Usuario? {
-        val user = FakeDatabase.usuarios.find { it.email == email && it.password == pass }
-
-        if (user != null) {
-            mensaje.value = "Bienvenido, ${user.nombre}"
-            _usuarioActual.value = user
-            return user
-        } else {
-            mensaje.value = "Credenciales incorrectas"
-            return null
-        }
-    }
-
-    fun registrar(
-        nombre: String,
-        apellido: String,
-        rut: String,
-        region: String,
-        comuna: String,
-        direccion: String,
-        email: String,
-        pass: String
-    ) {
+    //  LOGIN
+    fun login(email: String, pass: String, onResult: (Usuario?) -> Unit) {
         viewModelScope.launch {
-            val existe = FakeDatabase.usuarios.any { it.email == email }
-            if (existe) {
-                mensaje.value = "El correo ya está registrado"
-            } else {
-                val nuevoUsuario = Usuario(
-                    id = (FakeDatabase.usuarios.size + 1),
-                    nombre = nombre,
-                    apellido = apellido,
-                    email = email,
-                    password = pass,
-                    direccion = direccion,
-                    rut = rut,
-                    region = region,
-                    comuna = comuna
-                )
-                FakeDatabase.usuarios.add(nuevoUsuario)
-                mensaje.value = "Registro exitoso"
+            try {
+                val response = RetrofitClient.instance.login(LoginRequest(email, pass))
+                if (response.isSuccessful && response.body() != null) {
+                    val user = response.body()
+                    _usuarioActual.value = user
+                    mensaje.value = "Bienvenido, ${user?.nombre}"
+                    onResult(user) // Éxito
+                } else {
+                    mensaje.value = "Credenciales incorrectas"
+                    onResult(null) // Fallo
+                }
+            } catch (e: Exception) {
+                mensaje.value = "Error de conexión"
+                e.printStackTrace()
+                onResult(null)
             }
         }
     }
 
-    fun register(email: String, pass: String, confirmPass: String): Boolean {
-        if (pass != confirmPass) {
-            mensaje.value = "Las contraseñas no coinciden"
-            return false
+    // REGISTRO
+    fun registrar(
+        nombre: String, apellido: String, rut: String,
+        region: String, comuna: String, direccion: String,
+        email: String, pass: String,
+        onSuccess: () -> Unit // Callback para navegar si es exitoso
+    ) {
+        viewModelScope.launch {
+            try {
+                val request = RegisterRequestDto(nombre, apellido, rut, region, comuna, direccion, email, pass)
+                val response = RetrofitClient.instance.register(request)
+
+                if (response.isSuccessful) {
+                    mensaje.value = "Registro exitoso"
+                    onSuccess()
+                } else {
+                    mensaje.value = response.errorBody()?.string() ?: "Error al registrar"
+                }
+            } catch (e: Exception) {
+                mensaje.value = "Error de conexión: ${e.localizedMessage}"
+            }
         }
-        return true
     }
 }

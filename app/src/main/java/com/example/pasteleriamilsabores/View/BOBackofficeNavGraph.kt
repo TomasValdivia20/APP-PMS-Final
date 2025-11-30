@@ -44,7 +44,7 @@ fun BOBackofficeNavGraph(
             DrawerItem(Destinos.BOCATEGORIA, Icons.Default.Category, "Categorías"),
             DrawerItem(Destinos.BOUSUARIO, Icons.Default.People, "Usuarios"),
             DrawerItem(Destinos.BOREPORTES, Icons.Default.BarChart, "Reportes"),
-            DrawerItem(Destinos.BOPERFIL, Icons.Default.Person, "Perfil")
+            //DrawerItem(Destinos.BOPERFIL, Icons.Default.Person, "Perfil")
         )
     }
 
@@ -145,7 +145,7 @@ fun BODashboardContainer(
                 Destinos.BOCATEGORIA -> BOCategoriaScreen(boViewModel)
                 Destinos.BOUSUARIO -> BOUsuarioScreen(boViewModel)
                 Destinos.BOREPORTES -> BOReportesScreen(boViewModel)
-                Destinos.BOPERFIL -> BOPerfilScreen(boViewModel)
+                //Destinos.BOPERFIL -> BOPerfilScreen(boViewModel)
 
                 else -> BODashboardScreen(boViewModel)
             }

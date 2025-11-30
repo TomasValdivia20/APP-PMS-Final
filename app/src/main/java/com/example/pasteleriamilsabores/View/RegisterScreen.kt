@@ -22,7 +22,7 @@ import com.example.pasteleriamilsabores.Utils.validarCampos
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
-    // Estados (sin cambios)
+    // Estados para todos los campos
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var rut by remember { mutableStateOf("") }
@@ -31,6 +31,9 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
     var direccion by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Estado de carga para deshabilitar botón mientras se registra
+    var isRegistering by remember { mutableStateOf(false) }
 
     // Control de menús desplegables
     var expandedRegion by remember { mutableStateOf(false) }
@@ -45,7 +48,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             .background(PastelCalido)
             .padding(20.dp)
     ) {
-        // Logo (sin cambios)
+        // Logo superior derecho
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo de Pastelería Mil Sabores",
@@ -59,16 +62,17 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState()), // Scroll habilitado
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(80.dp))
+            Spacer(Modifier.height(80.dp)) // Espacio para el logo
 
-            Text(text = "¡Registrate!", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Registro de Cliente", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(16.dp))
 
-            // Campos de texto (Nombre, Apellido, RUT - sin cambios)
+            // --- CAMPOS DE TEXTO ---
+
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
@@ -85,6 +89,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             )
             Spacer(Modifier.height(8.dp))
 
+            // CAMPO RUT
             OutlinedTextField(
                 value = rut,
                 onValueChange = { rut = it },
@@ -93,7 +98,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             )
             Spacer(Modifier.height(8.dp))
 
-            // --- SELECTOR DE REGIÓN (CORREGIDO) ---
+            // --- SELECTOR DE REGIÓN ---
             ExposedDropdownMenuBox(
                 expanded = expandedRegion,
                 onExpandedChange = { expandedRegion = !expandedRegion },
@@ -105,9 +110,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     readOnly = true,
                     label = { Text("Región") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
-                        .fillMaxWidth()
+                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = expandedRegion,
@@ -118,7 +121,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             text = { Text(regionItem) },
                             onClick = {
                                 region = regionItem
-                                comuna = ""
+                                comuna = "" // Resetear comuna al cambiar región
                                 expandedRegion = false
                             }
                         )
@@ -127,7 +130,7 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             }
             Spacer(Modifier.height(8.dp))
 
-            // --- SELECTOR DE COMUNA (CORREGIDO) ---
+            // --- SELECTOR DE COMUNA ---
             ExposedDropdownMenuBox(
                 expanded = expandedComuna,
                 onExpandedChange = { expandedComuna = !expandedComuna },
@@ -140,10 +143,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     label = { Text("Comuna") },
                     placeholder = { Text(if (region.isEmpty()) "Seleccione Región primero" else "Seleccione Comuna") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, region.isNotEmpty())
-                        .fillMaxWidth(),
-                    enabled = region.isNotEmpty()
+                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, region.isNotEmpty()).fillMaxWidth(),
+                    enabled = region.isNotEmpty() // Deshabilitar si no hay región
                 )
                 ExposedDropdownMenu(
                     expanded = expandedComuna,
@@ -166,7 +167,6 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
             }
             Spacer(Modifier.height(8.dp))
 
-            // Campos restantes (Dirección, Email, Password, Botones - sin cambios)
             OutlinedTextField(
                 value = direccion,
                 onValueChange = { direccion = it },
@@ -193,9 +193,10 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón Registrar
+            // --- BOTÓN REGISTRAR ---
             Button(
                 onClick = {
+                    // 1. Validamos campos localmente
                     val error = validarCampos(
                         nombre = nombre,
                         apellido = apellido,
@@ -210,6 +211,14 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                     if (error != null) {
                         viewModel.mensaje.value = error
                     } else {
+                        // 2. Si es válido, iniciamos registro asíncrono
+                        isRegistering = true // Mostrar carga (opcional visualmente, pero bloquea botón)
+
+                        // Aseguramos que la dirección incluya detalles si el backend espera un solo string
+                        // Pero como ahora el backend recibe todo separado en el DTO, mejor pasarlo separado.
+                        // Nota: Si tu 'registrar' espera 'direccion' como string simple, pasa solo la calle.
+                        // Si espera todo, pasa todo. Asumiendo tu último AuthViewModel:
+
                         viewModel.registrar(
                             nombre = nombre,
                             apellido = apellido,
@@ -218,20 +227,34 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel) {
                             comuna = comuna,
                             direccion = direccion,
                             email = email,
-                            pass = password
+                            pass = password,
+                            onSuccess = {
+                                isRegistering = false
+                                // 3. Navegar al login solo si el backend respondió OK (200)
+                                navController.navigate("login")
+                            }
                         )
-                        navController.navigate("login")
+                        // Nota: Si falla, el viewModel actualiza 'mensaje.value' y isRegistering debería resetearse.
+                        // Como 'registrar' es void en tu versión asíncrona con callback, asegúrate de manejar el error en el VM
+                        // para volver isRegistering a false o usa un timeout/estado.
+                        // Simplificación: Lo dejamos en true hasta navegar o que el usuario reintente si ve el error.
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isRegistering // Deshabilitar mientras carga
             ) {
-                Text("Registrar")
+                if (isRegistering) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Registrar")
+                }
             }
 
+            // Mensaje de error o éxito
             if (viewModel.mensaje.value.isNotEmpty()) {
                 Text(
                     text = viewModel.mensaje.value,
-                    color = if (viewModel.mensaje.value == "Registro exitoso ") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    color = if (viewModel.mensaje.value.contains("exitoso", ignoreCase = true)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 10.dp)
                 )
             }

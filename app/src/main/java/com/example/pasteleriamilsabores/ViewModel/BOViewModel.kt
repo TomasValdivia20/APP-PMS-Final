@@ -56,6 +56,14 @@ class BOViewModel(
     private val _categorias = MutableStateFlow<List<Categoria>>(emptyList())
     val categorias: StateFlow<List<Categoria>> = _categorias
 
+    // Lista inicial predeterminada para gestion de tamaños en dropdown
+    private val listaTamanosInicial = listOf(
+        "Tamaño Único", "12 Personas", "16 Personas", "20 Personas",
+        "25 Personas", "30 Personas", "40 Personas", "50 Personas"
+    )
+    // Usamos MutableStateFlow pero exponemos una lista mutable para que la UI pueda añadir
+    // Aquí lo mantenemos en memoria del ViewModel
+    val listaTamanosDisponibles = mutableListOf<String>().apply { addAll(listaTamanosInicial) }
     val mensajeOperacion = MutableStateFlow<String?>(null)
 
     init {
@@ -194,6 +202,12 @@ class BOViewModel(
         if (route == Destinos.BODASHBOARD || route == Destinos.BOORDENES) cargarOrdenes()
         if (route == Destinos.BOUSUARIO) cargarUsuarios()
         if (route == Destinos.BOREPORTES || route == Destinos.BODASHBOARD) cargarReportes()
+    }
+
+    fun agregarNuevoTamanoALista(nuevoTamano: String) {
+        if (!listaTamanosDisponibles.contains(nuevoTamano)) {
+            listaTamanosDisponibles.add(nuevoTamano)
+        }
     }
 
 

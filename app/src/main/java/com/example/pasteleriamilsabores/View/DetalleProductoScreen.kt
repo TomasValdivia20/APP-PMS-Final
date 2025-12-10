@@ -28,7 +28,10 @@ import com.example.pasteleriamilsabores.ViewModel.CartViewModel
 import com.example.pasteleriamilsabores.Model.CartItem
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import com.example.pasteleriamilsabores.Utils.construirUrlImagen // 🛑 IMPORTAR HELPER
+import com.example.pasteleriamilsabores.Utils.construirUrlImagen
+import androidx.compose.material.icons.filled.Info
+import com.example.pasteleriamilsabores.Utils.obtenerTerminoNutricional
+import com.example.pasteleriamilsabores.Destinos
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +69,16 @@ fun DetalleProductoScreen(
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Volver")
+                        }
+                    },
+                    actions = {
+                        if (producto != null) {
+                            IconButton(onClick = {
+                                val terminoBusqueda = obtenerTerminoNutricional(producto!!.nombre)
+                                navController.navigate(Destinos.crearRutaFoodInfo(terminoBusqueda))
+                            }) {
+                                Icon(Icons.Default.Info, contentDescription = "Info USDA", tint = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(

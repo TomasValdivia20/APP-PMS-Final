@@ -20,17 +20,26 @@ import com.example.pasteleriamilsabores.ViewModel.FoodInfoViewModel
 @Composable
 fun FoodInfoScreen(
     navController: NavController,
-    viewModel: FoodInfoViewModel = viewModel()
+    viewModel: FoodInfoViewModel = viewModel(),
+    initialQuery: String = ""
+
 ) {
     var query by remember { mutableStateOf("") }
     val resultados by viewModel.searchResults.collectAsState()
     val loading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
 
+    // Busqueda automatica al iniciar
+    LaunchedEffect(Unit) {
+        if (initialQuery.isNotBlank()) {
+            viewModel.buscarAlimento(initialQuery)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Info Nutricional (USDA)") },
+                title = { Text(if(initialQuery.isNotBlank()) "Info: $initialQuery" else "Info Nutricional") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -45,12 +54,12 @@ fun FoodInfoScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Barra de Búsqueda
+            // Barra de Búsqueda (Permite buscar otra cosa si el usuario quiere)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Buscar alimento (ej: Apple)") },
+                    label = { Text("Producto en Inglés (USDA)") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -69,12 +78,17 @@ fun FoodInfoScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Mensaje de Error
             if (error != null) {
                 Text(text = error!!, color = MaterialTheme.colorScheme.error)
             }
 
-            // Lista de Resultados
+            // Si buscamos automáticamente y no hay resultados aún
+            if (loading) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("Consultando base de datos internacional...")
+                }
+            }
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize()

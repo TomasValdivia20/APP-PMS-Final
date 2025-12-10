@@ -161,8 +161,16 @@ fun BOAgregarProductoForm(
     // Estados para la nueva variante
     var varNombre by remember { mutableStateOf("") }
     var varPrecio by remember { mutableStateOf("") }
-    var varStock by remember { mutableStateOf("") } // 🛑 NUEVO ESTADO: Stock
+    var varStock by remember { mutableStateOf("") }
     var varInfo by remember { mutableStateOf("") }
+
+    // Lógica del Dropdown
+    var expandedTamano by remember { mutableStateOf(false) }
+    var tamanoSeleccionado by remember { mutableStateOf("") } // El valor que se guarda
+    var esTamanoPersonalizado by remember { mutableStateOf(false) } // Si el usuario eligió "Nuevo tamaño"
+
+    // Obtenemos la lista del ViewModel (se mantendrá actualizada)
+    val opcionesTamanos = remember { viewModel.listaTamanosDisponibles }
 
     Column(
         modifier = Modifier
@@ -178,132 +186,132 @@ fun BOAgregarProductoForm(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Botón Imagen
-        Button(
-            onClick = {
-                photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Image, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(if (imagenUrl == "placeholder.jpg") "Subir Imagen" else "Imagen Cargada")
+        Button(onClick = { photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Image, contentDescription = null); Spacer(Modifier.width(8.dp)); Text(if (imagenUrl == "placeholder.jpg") "Subir Imagen" else "Imagen Cargada")
         }
-
-        if (imagenUrl != "placeholder.jpg") {
-            AsyncImage(
-                model = construirUrlImagen(imagenUrl),
-                contentDescription = null,
-                modifier = Modifier.size(100.dp).align(Alignment.CenterHorizontally)
-            )
-        }
-
         OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre Producto") }, modifier = Modifier.fillMaxWidth())
-
         ExposedDropdownMenuBox(expanded = expandedCat, onExpandedChange = { expandedCat = !expandedCat }) {
-            OutlinedTextField(
-                value = categoriaSeleccionada?.nombre ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Categoría") },
-                placeholder = { Text("Seleccione Categoría") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
-            )
+            OutlinedTextField(value = categoriaSeleccionada?.nombre ?: "", onValueChange = {}, readOnly = true, label = { Text("Categoría") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) }, modifier = Modifier.menuAnchor().fillMaxWidth())
             ExposedDropdownMenu(expanded = expandedCat, onDismissRequest = { expandedCat = false }) {
-                if (categorias.isEmpty()) {
-                    DropdownMenuItem(text = { Text("No hay categorías cargadas") }, onClick = {})
+                categorias.forEach { cat -> DropdownMenuItem(text = { Text(cat.nombre) }, onClick = { categoriaSeleccionada = cat; expandedCat = false }) }
+            }
+        }
+        OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = precioBase, onValueChange = { precioBase = it }, label = { Text("Precio Base") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+
+
+        Divider()
+        Text("Variantes / Tamaños", style = MaterialTheme.typography.titleMedium)
+
+        // Fila de seleccion de tamaño
+        if (esTamanoPersonalizado) {
+            // Si eligió personalizado, mostramos TextField con botón 'X' para volver al dropdown
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = tamanoSeleccionado,
+                    onValueChange = { tamanoSeleccionado = it },
+                    label = { Text("Escribe nuevo tamaño") },
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = {
+                    esTamanoPersonalizado = false
+                    tamanoSeleccionado = ""
+                }) {
+                    Icon(Icons.Default.Delete, "Cancelar personalizado")
                 }
-                categorias.forEach { cat ->
+            }
+        } else {
+            // Dropdown de Tamaños
+            ExposedDropdownMenuBox(
+                expanded = expandedTamano,
+                onExpandedChange = { expandedTamano = !expandedTamano },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = tamanoSeleccionado,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Tamaño / Variante") },
+                    placeholder = { Text("Seleccione tamaño") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTamano) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedTamano,
+                    onDismissRequest = { expandedTamano = false }
+                ) {
+                    // Opciones predefinidas
+                    opcionesTamanos.forEach { opcion ->
+                        DropdownMenuItem(
+                            text = { Text(opcion) },
+                            onClick = {
+                                tamanoSeleccionado = opcion
+                                expandedTamano = false
+                            }
+                        )
+                    }
+                    Divider()
+                    // Opción para crear nuevo
                     DropdownMenuItem(
-                        text = { Text(cat.nombre) },
-                        onClick = { categoriaSeleccionada = cat; expandedCat = false }
+                        text = { Text("➕ Nuevo tamaño personalizado...", fontWeight = FontWeight.Bold) },
+                        onClick = {
+                            esTamanoPersonalizado = true
+                            tamanoSeleccionado = "" // Limpiar para que escriba
+                            expandedTamano = false
+                        }
                     )
                 }
             }
         }
 
-        OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
-
-        OutlinedTextField(
-            value = precioBase,
-            onValueChange = { precioBase = it },
-            label = { Text("Precio Base") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Divider()
-        Text("Variantes / Tamaños (Stock)", style = MaterialTheme.typography.titleMedium)
-
+        // Fila de Precio y Stock
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedTextField(
-                value = varNombre,
-                onValueChange = { varNombre = it },
-                label = { Text("Nombre (ej: 12p)") },
-                modifier = Modifier.weight(1.2f)
-            )
-            OutlinedTextField(
-                value = varPrecio,
-                onValueChange = { varPrecio = it },
-                label = { Text("Precio") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(0.9f)
-            )
-            // Campo Stock Nuevo
-            OutlinedTextField(
-                value = varStock,
-                onValueChange = { varStock = it },
-                label = { Text("Stock") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(0.9f)
-            )
+            OutlinedTextField(value = varPrecio, onValueChange = { varPrecio = it }, label = { Text("Precio") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+            OutlinedTextField(value = varStock, onValueChange = { varStock = it }, label = { Text("Stock") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
         }
         OutlinedTextField(value = varInfo, onValueChange = { varInfo = it }, label = { Text("Info Nutricional") }, modifier = Modifier.fillMaxWidth())
 
         Button(
             onClick = {
-                if (varNombre.isNotBlank() && varPrecio.isNotBlank()) {
+                if (tamanoSeleccionado.isNotBlank() && varPrecio.isNotBlank()) {
                     val stockInt = varStock.toIntOrNull() ?: 0
                     val precioInt = varPrecio.toIntOrNull() ?: 0
 
-                    variantesList.add(VarianteProducto(0, varNombre, precioInt, stockInt, varInfo))
+                    // Si era personalizado, lo guardamos en la lista global del ViewModel
+                    if (esTamanoPersonalizado) {
+                        viewModel.agregarNuevoTamanoALista(tamanoSeleccionado)
+                    }
 
-                    // Limpiar campos
-                    varNombre = ""
+                    variantesList.add(VarianteProducto(0, tamanoSeleccionado, precioInt, stockInt, varInfo))
+
+                    // Resetear campos
+                    tamanoSeleccionado = ""
+                    esTamanoPersonalizado = false // Volver al dropdown
                     varPrecio = ""
-                    varStock = "" // Limpiar stock
+                    varStock = ""
                     varInfo = ""
                 }
             },
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.End),
+            enabled = tamanoSeleccionado.isNotBlank() && varPrecio.isNotBlank()
         ) {
             Text("Añadir Variante")
         }
 
-        // Lista visual
+        // ... (Lista visual de variantes y botones finales IGUAL que antes) ...
         if (variantesList.isNotEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     variantesList.forEachIndexed { index, variante ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Mostrar Stock en la lista visual
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("• ${variante.nombre} ($${variante.precio}) - Stock: ${variante.stock}")
-                            IconButton(onClick = { variantesList.removeAt(index) }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
-                            }
+                            IconButton(onClick = { variantesList.removeAt(index) }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error) }
                         }
                     }
                 }
             }
         }
-
         Divider()
-
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = {
@@ -321,7 +329,6 @@ fun BOAgregarProductoForm(
                 modifier = Modifier.weight(1f),
                 enabled = nombre.isNotBlank() && categoriaSeleccionada != null && variantesList.isNotEmpty()
             ) { Text(if (productoExistente != null) "Actualizar" else "Guardar") }
-
             OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
         }
     }

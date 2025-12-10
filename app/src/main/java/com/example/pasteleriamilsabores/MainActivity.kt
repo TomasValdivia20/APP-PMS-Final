@@ -118,8 +118,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // RUTA DE INFO NUTRICIONAL (API EXTERNA)
-                composable(Destinos.FOOD_INFO_SCREEN) {
-                    FoodInfoScreen(navController = navController)
+                composable(
+                    route = Destinos.FOOD_INFO_SCREEN,
+                    arguments = listOf(navArgument("searchTerm") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val searchTerm = backStackEntry.arguments?.getString("searchTerm") ?: ""
+                    FoodInfoScreen(navController = navController, initialQuery = searchTerm)
                 }
             }
         }

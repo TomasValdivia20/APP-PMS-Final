@@ -116,3 +116,16 @@ fun construirUrlImagen(imagen: String?): String {
         else -> "${RetrofitClient.BASE_URL}$imagen"
     }
 }
+
+//Funcion para mapear productos a terminos de busqueda en Ingles por Api Externa (Del USDA)
+fun obtenerTerminoNutricional(nombreProducto: String): String {
+    val nombre = nombreProducto.lowercase()
+    return when {
+        nombre.contains("torta") || nombre.contains("bizcocho") || nombre.contains("kuchen") -> "Cake"
+        nombre.contains("cheesecake") -> "Cheesecake"
+        nombre.contains("galleta") || nombre.contains("masas") -> "Cookie"
+        nombre.contains("pan de pascua") -> "Fruitcake"
+        nombre.contains("brazo") -> "Swiss Roll"
+        else -> "Pastry" // Término genérico por defecto
+    }
+}

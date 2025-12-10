@@ -32,7 +32,9 @@ object Destinos {
     const val BOREPORTES = "bo/reportes"
     const val BOPERFIL = "bo/perfil"
 
-    const val FOOD_INFO_SCREEN = "food_info_screen"
+    const val FOOD_INFO_SCREEN = "food_info_screen/{searchTerm}"
+
+    fun crearRutaFoodInfo(searchTerm: String) = "food_info_screen/$searchTerm"
 
     // Función "helper" para crear la ruta de detalle con el ID
     fun crearRutaDetalleProducto(productoId: Int) = "detalle_producto_screen/$productoId"

@@ -17,13 +17,9 @@ import com.example.pasteleriamilsabores.ViewModel.BOViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
-// Reutilizamos BOOrdenItem ya que es idéntico a lo que queremos mostrar aquí
-// Si prefieres mantener VentaRow antigua, avísame, pero usar BOOrdenItem es más consistente.
-
 @Composable
 fun BODashboardScreen(viewModel: BOViewModel) {
-    // 🛑 DATOS REALES
-    val ordenes by viewModel.ordenesReales.collectAsState()
+    val ordenes: List<OrdenResponse> by viewModel.ordenesReales.collectAsState(initial = emptyList())
     val reportes by viewModel.reporteVentas.collectAsState()
 
     val formatter = remember { NumberFormat.getCurrencyInstance(Locale("es", "CL")) }
@@ -39,11 +35,13 @@ fun BODashboardScreen(viewModel: BOViewModel) {
         // Tarjetas con datos reales del reporte
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Usamos DashboardCard de BOComponentesComunes (si no lo tienes, copia la definición aquí abajo o importala)
+                // Asumimos que está en el mismo paquete View y no necesita import.
                 DashboardCard(
                     title = "Ventas del Mes",
                     content = {
                         Text(
-                            text = if (reportes != null) formatter.format(reportes!!.mensual) else "Cargando...",
+                            text = if (reportes != null) formatter.format(reportes!!.mensual) else "...",
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -54,7 +52,7 @@ fun BODashboardScreen(viewModel: BOViewModel) {
                     title = "Ventas Anuales",
                     content = {
                         Text(
-                            text = if (reportes != null) formatter.format(reportes!!.anual) else "Cargando...",
+                            text = if (reportes != null) formatter.format(reportes!!.anual) else "...",
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.tertiary
                         )
@@ -74,9 +72,55 @@ fun BODashboardScreen(viewModel: BOViewModel) {
             item { Text("No hay movimientos recientes.") }
         } else {
             // Mostramos las últimas 5 órdenes solamente
-            items(items = ordenes.take(5), key = { it.id }) { orden ->
-                BOOrdenItem(orden = orden, formatter = formatter)
+            items(
+                items = ordenes.take(5),
+                key = { it.id }
+            ) { orden ->
+                // Reutilizamos el item de orden (asegúrate de que BOOrdenItem sea accesible o defínelo aquí)
+                // Si BOOrdenItem está en otro archivo del mismo paquete, no necesita import.
+                // Si no, copia su definición aquí o importalo.
+                // Como alternativa, uso DashboardOrdenRow definido abajo para ser autocontenido.
+                DashboardOrdenRow(orden = orden, formatter = formatter)
             }
         }
     }
 }
+
+// Componente local para mostrar la orden en el Dashboard (simplificado)
+@Composable
+fun DashboardOrdenRow(orden: OrdenResponse, formatter: NumberFormat) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Orden #${orden.id}", fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (orden.fecha.length >= 10) orden.fecha.take(10) else orden.fecha,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("${orden.usuario.nombre} ${orden.usuario.apellido}", style = MaterialTheme.typography.bodyMedium)
+                Text(formatter.format(orden.total), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+            Text(orden.estado, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+// Si DashboardCard no está accesible desde BOComponentesComunes, descomentar esto:
+/*
+@Composable
+fun DashboardCard(title: String, content: @Composable () -> Unit, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            content()
+        }
+    }
+}
+*/

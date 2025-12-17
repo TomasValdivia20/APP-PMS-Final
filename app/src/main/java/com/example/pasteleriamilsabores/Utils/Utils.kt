@@ -126,6 +126,6 @@ fun obtenerTerminoNutricional(nombreProducto: String): String {
         nombre.contains("galleta") || nombre.contains("masas") -> "Cookie"
         nombre.contains("pan de pascua") -> "Fruitcake"
         nombre.contains("brazo") -> "Swiss Roll"
-        else -> "Pastry" // Término genérico por defecto
+        else -> "Pastry" // Término genérico por defecto para cualquier otro producto
     }
 }

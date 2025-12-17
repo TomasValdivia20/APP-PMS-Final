@@ -28,7 +28,8 @@ class FoodInfoViewModel : ViewModel() {
             try {
                 val response = FoodDataClient.service.searchFoods(
                     apiKey = FoodDataClient.API_KEY,
-                    query = query
+                    query = query,
+                    pageSize = 1
                 )
                 _searchResults.value = response.foods
             } catch (e: Exception) {

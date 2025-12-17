@@ -51,7 +51,10 @@ interface ApiService {
     suspend fun crearOrden(@Body request: OrdenRequest): Response<Any>
 
     @GET("api/ordenes")
-    suspend fun obtenerOrdenes(): List<OrdenResponse> // Antes era List<Map<...>>
+    suspend fun obtenerOrdenes(): List<OrdenResponse>
+
+    @PUT("api/ordenes/{id}/estado")
+    suspend fun cambiarEstadoOrden(@Path("id") id: Long, @Body body: Map<String, String>): OrdenResponse
 
     // --- USUARIOS ---
     @GET("api/usuarios")
@@ -68,4 +71,16 @@ interface ApiService {
 
     @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequestDto): Response<Usuario>
+
+    // --- USUARIOS PARA ADMIN ---
+    @POST("api/usuarios")
+    suspend fun crearUsuario(@Body usuario: UsuarioBackoffice): UsuarioBackoffice
+
+    @PUT("api/usuarios/{id}")
+    suspend fun actualizarUsuario(@Path("id") id: Long, @Body usuario: UsuarioBackoffice): UsuarioBackoffice
+
+    @DELETE("api/usuarios/{id}")
+    suspend fun eliminarUsuario(@Path("id") id: Long): Response<Void>
+
+
 }

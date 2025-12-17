@@ -3,10 +3,8 @@ package com.example.pasteleriamilsabores.View
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,24 +25,27 @@ fun BOBackofficeNavGraph(
     navController: NavController
 ) {
     val context = LocalContext.current
-    // Inyección del ViewModel con Factory
-    val boViewModel: BOViewModel = viewModel(factory = BOViewModelFactory(context))
+
+    // 🛑 INYECCIÓN CORRECTA CON FACTORY
+    // Si esta línea falla, el error será "Cannot create instance..."
+    val boViewModel: BOViewModel = viewModel(
+        factory = BOViewModelFactory(context)
+    )
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val currentScreenRoute by boViewModel.currentScreen.collectAsState()
 
-    // 🛑 1. DEFINIR drawerItems AQUÍ (Una única vez)
-    // Usamos remember para que la lista no se recree en cada recomposición
+    // Definición única de ítems del menú
     val drawerItems = remember {
         listOf(
             DrawerItem(Destinos.BODASHBOARD, Icons.Default.Dashboard, "Dashboard"),
-            DrawerItem(Destinos.BOORDENES, Icons.AutoMirrored.Filled.ReceiptLong, "Órdenes"),
+            DrawerItem(Destinos.BOORDENES, Icons.Default.ReceiptLong, "Órdenes"),
             DrawerItem(Destinos.BOPRODUCTO, Icons.Default.Cake, "Productos"),
             DrawerItem(Destinos.BOCATEGORIA, Icons.Default.Category, "Categorías"),
             DrawerItem(Destinos.BOUSUARIO, Icons.Default.People, "Usuarios"),
             DrawerItem(Destinos.BOREPORTES, Icons.Default.BarChart, "Reportes"),
-            //DrawerItem(Destinos.BOPERFIL, Icons.Default.Person, "Perfil")
+            DrawerItem(Destinos.BOPERFIL, Icons.Default.Person, "Perfil")
         )
     }
 
@@ -54,9 +55,8 @@ fun BOBackofficeNavGraph(
             ModalDrawerSheet {
                 Spacer(Modifier.height(12.dp))
                 Text("Menú Backoffice", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
-                HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+                Divider()
 
-                // Renderizar ítems del menú
                 drawerItems.forEach { item ->
                     NavigationDrawerItem(
                         icon = { Icon(item.icon, contentDescription = null) },
@@ -72,7 +72,6 @@ fun BOBackofficeNavGraph(
 
                 Spacer(Modifier.weight(1f))
 
-                // Botón Cerrar Sesión (Menú Lateral)
                 NavigationDrawerItem(
                     icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
                     label = { Text("Cerrar Sesión") },
@@ -87,13 +86,12 @@ fun BOBackofficeNavGraph(
             }
         },
         content = {
-            // 🛑 2. PASAR drawerItems A BODashboardContainer
             BODashboardContainer(
                 currentScreenRoute = currentScreenRoute,
                 onMenuClick = { scope.launch { drawerState.open() } },
                 boViewModel = boViewModel,
-                drawerItems = drawerItems, // <-- Pasamos la lista aquí
-                onLogout = { // Callback para el botón de la barra superior
+                drawerItems = drawerItems,
+                onLogout = {
                     navController.navigate(Destinos.LOGIN_SCREEN) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -109,10 +107,9 @@ fun BODashboardContainer(
     currentScreenRoute: String,
     onMenuClick: () -> Unit,
     boViewModel: BOViewModel,
-    drawerItems: List<DrawerItem>, // <-- Recibe la lista
+    drawerItems: List<DrawerItem>,
     onLogout: () -> Unit
 ) {
-    // Obtener el título usando la lista recibida
     val title = remember(currentScreenRoute, drawerItems) {
         drawerItems.find { it.route == currentScreenRoute }?.title ?: "Backoffice"
     }
@@ -145,8 +142,7 @@ fun BODashboardContainer(
                 Destinos.BOCATEGORIA -> BOCategoriaScreen(boViewModel)
                 Destinos.BOUSUARIO -> BOUsuarioScreen(boViewModel)
                 Destinos.BOREPORTES -> BOReportesScreen(boViewModel)
-                //Destinos.BOPERFIL -> BOPerfilScreen(boViewModel)
-
+                Destinos.BOPERFIL -> BOPerfilScreen(boViewModel)
                 else -> BODashboardScreen(boViewModel)
             }
         }

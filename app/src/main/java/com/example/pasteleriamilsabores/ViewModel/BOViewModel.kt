@@ -38,6 +38,9 @@ class BOViewModel(
     private val _reporteVentas = MutableStateFlow<ReporteVentas?>(null)
     val reporteVentas: StateFlow<ReporteVentas?> = _reporteVentas
 
+    private val _usuario = MutableStateFlow<UsuarioBackoffice?>(null)
+    val usuario: StateFlow<UsuarioBackoffice?> = _usuario
+
     // --- ESTADOS EXISTENTES ---
     // (Mantenemos estos para compatibilidad, pero ya no deberían usarse en la UI nueva)
     private val _ventas = MutableStateFlow<List<Venta>>(FakeBackofficeData.ventasRecientes)
@@ -208,6 +211,57 @@ class BOViewModel(
         if (!listaTamanosDisponibles.contains(nuevoTamano)) {
             listaTamanosDisponibles.add(nuevoTamano)
         }
+    }
+
+    // Funciones para admin exclusivamente
+    fun crearUsuario(usuario: UsuarioBackoffice) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.crearUsuario(usuario)
+                mensajeOperacion.value = "Usuario creado"
+                cargarUsuarios()
+            } catch (e: Exception) { mensajeOperacion.value = "Error al crear usuario" }
+        }
+    }
+
+    fun actualizarUsuario(usuario: UsuarioBackoffice) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.actualizarUsuario(usuario.id, usuario)
+                mensajeOperacion.value = "Usuario actualizado"
+                cargarUsuarios()
+            } catch (e: Exception) { mensajeOperacion.value = "Error al actualizar" }
+        }
+    }
+
+    fun eliminarUsuario(id: Long) {
+        viewModelScope.launch {
+            try {
+                val resp = RetrofitClient.instance.eliminarUsuario(id)
+                if (resp.isSuccessful) {
+                    mensajeOperacion.value = "Usuario eliminado"
+                    cargarUsuarios()
+                } else {
+                    mensajeOperacion.value = "No se pudo eliminar (¿Es admin?)"
+                }
+            } catch (e: Exception) { mensajeOperacion.value = "Error al eliminar" }
+        }
+    }
+
+    // Funcion para cambiar estado de orden
+    fun cambiarEstadoOrden(id: Long, nuevoEstado: String) {
+        viewModelScope.launch {
+            try {
+                val map = mapOf("estado" to nuevoEstado)
+                RetrofitClient.instance.cambiarEstadoOrden(id, map)
+                mensajeOperacion.value = "Estado actualizado"
+                cargarOrdenes() // Refrescar lista
+            } catch (e: Exception) { mensajeOperacion.value = "Error al cambiar estado" }
+        }
+    }
+
+    fun setUsuarioActual(user: UsuarioBackoffice) {
+        _usuario.value = user
     }
 
 
